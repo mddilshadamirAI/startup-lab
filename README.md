@@ -21,6 +21,4 @@ career_guide.py: Career path selection tool.
 
 main.py / login.py: Application flow and security.
 
-lecture1.py: Coursework and learning documentation.
-
 requirements.txt: Dependencies for the workspace environment.
