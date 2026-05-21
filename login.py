@@ -18,6 +18,8 @@ for attempt in range(max_attempts):
 else:
     print("login failed") 
 
+print("Thanks for using our system")
+
 
 
  
