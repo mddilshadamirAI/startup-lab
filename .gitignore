@@ -1,1 +1,20 @@
-.venv
+# --- Environment ---
+.venv/
+venv/
+env/
+.env
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- IDE/Editor Folders ---
+.idx/
+.vscode/
+.idea/
+.DS_Store
+
+# --- OS Specific ---
+Thumbs.db
