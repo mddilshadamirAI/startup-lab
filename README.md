@@ -24,6 +24,7 @@ The project is structured to ensure modularity and clean execution flow:
 * **`lecture1.py`**: Your gateway to foundational Python exercises.
 * **`requirements.txt`**: All necessary dependencies to build your environment.
 
+### YOU CAN GIVE ME FEEDBACK ABOUT MY CODE VIA MAIL.
 ---
 
 ## ⚡ Getting Started
