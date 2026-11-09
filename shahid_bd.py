@@ -107,12 +107,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 3D Interactive Three.js Cake & Reolving Photo Fragments
+# 3D Interactive Three.js Cake & Revolving Photo Fragments
 # ---------------------------------------------------------
 def render_3d_arena(is_lit):
     lit_flag = "true" if is_lit else "false"
     
-    html_code = f"""
+    # Using a standard string template with .format() to avoid f-string curly brace conflicts
+    html_template = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -126,7 +127,7 @@ def render_3d_arena(is_lit):
         <div id="canvas-container"></div>
         <script>
             let scene, camera, renderer, flames = [], photoFragments = [];
-            let candlesLit = {lit_flag};
+            let candlesLit = {LitFlag};
 
             function init() {{
                 const container = document.getElementById('canvas-container');
@@ -224,7 +225,6 @@ def render_3d_arena(is_lit):
                 textureLoader.load('shahid.jpg', (texture) => {{
                     createOrbits(texture);
                 }}, undefined, (err) => {{
-                    // Fallback colored fragments if image is missing
                     createOrbits(null);
                 }});
 
@@ -258,16 +258,14 @@ def render_3d_arena(is_lit):
             function animate() {{
                 requestAnimationFrame(animate);
 
-                // Revolve photo fragments around the cake
                 photoFragments.forEach(frag => {{
                     frag.userData.angle += frag.userData.speed;
                     frag.position.x = Math.cos(frag.userData.angle) * frag.userData.radius;
                     frag.position.z = Math.sin(frag.userData.angle) * frag.userData.radius;
                     frag.position.y = frag.userData.initialY + Math.sin(Date.now() * 0.003 * frag.userData.bobSpeed) * 0.4;
                     frag.rotation.y = -frag.userData.angle + Math.PI / 2;
-                }));
+                }});
 
-                // Flame flicker effect
                 if (candlesLit) {{
                     flames.forEach(f => {{
                         f.scale.x = 0.85 + Math.sin(Date.now() * 0.012) * 0.25;
@@ -283,6 +281,8 @@ def render_3d_arena(is_lit):
     </body>
     </html>
     """
+    
+    html_code = html_template.format(LitFlag=lit_flag)
     components.html(html_code, height=430)
 
 # Render 3D Cake & Revolving Photos Arena
@@ -339,4 +339,3 @@ with col_wish_txt:
             </p>
         </div>
     """, unsafe_allow_html=True)
-
