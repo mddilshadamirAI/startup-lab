@@ -1,5 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import base64
+import os
 
 # ---------------------------------------------------------
 # Page Config & Gamer Dark Theme CSS
@@ -97,6 +99,18 @@ if "candles_lit" not in st.session_state:
     st.session_state.candles_lit = False
 
 # ---------------------------------------------------------
+# Helper: Convert image to base64 for smooth Three.js texture loading
+# ---------------------------------------------------------
+def get_image_base64(path):
+    if os.path.exists(path):
+        with open(path, "rb") as img_file:
+            encoded = base64.b64encode(img_file.read()).decode("utf-8")
+            return f"data:image/jpeg;base64,{encoded}"
+    return None
+
+img_data_uri = get_image_base64("shahid.jpg")
+
+# ---------------------------------------------------------
 # Header Banner
 # ---------------------------------------------------------
 st.markdown("""
@@ -109,17 +123,17 @@ st.markdown("""
 # ---------------------------------------------------------
 # 3D Interactive Three.js Cake & Revolving Photo Fragments
 # ---------------------------------------------------------
-def render_3d_arena(is_lit):
+def render_3d_arena(is_lit, img_uri):
     lit_flag = "true" if is_lit else "false"
+    image_source = img_uri if img_uri else ""
     
-    # Using a standard string template with .format() to avoid f-string curly brace conflicts
     html_template = """
     <!DOCTYPE html>
     <html>
     <head>
         <style>
             body {{ margin: 0; overflow: hidden; background: transparent; }}
-            #canvas-container {{ width: 100%; height: 420px; position: relative; }}
+            #canvas-container {{ width: 100%; height: 440px; position: relative; }}
         </style>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     </head>
@@ -128,13 +142,14 @@ def render_3d_arena(is_lit):
         <script>
             let scene, camera, renderer, flames = [], photoFragments = [];
             let candlesLit = {LitFlag};
+            let imgDataUri = "{ImgUri}";
 
             function init() {{
                 const container = document.getElementById('canvas-container');
                 scene = new THREE.Scene();
 
                 camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-                camera.position.set(0, 4, 9);
+                camera.position.set(0, 4, 9.5);
                 camera.lookAt(0, 1.2, 0);
 
                 renderer = new THREE.WebGLRenderer({{ antialias: true, alpha: true }});
@@ -143,7 +158,7 @@ def render_3d_arena(is_lit):
                 container.appendChild(renderer.domElement);
 
                 // Lighting Setup
-                scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+                scene.add(new THREE.AmbientLight(0xffffff, 0.75));
                 
                 const light1 = new THREE.DirectionalLight(0x00f3ff, 1.2);
                 light1.position.set(5, 8, 5);
@@ -220,34 +235,38 @@ def render_3d_arena(is_lit):
 
                 scene.add(cakeGroup);
 
-                // Load Texture & Create Revolving Photo Fragments (15 Fragments Orbiting)
-                const textureLoader = new THREE.TextureLoader();
-                textureLoader.load('shahid.jpg', (texture) => {{
-                    createOrbits(texture);
-                }}, undefined, (err) => {{
+                // Load Photo Texture & Create Revolving Fragments
+                if (imgDataUri) {{
+                    const textureLoader = new THREE.TextureLoader();
+                    textureLoader.load(imgDataUri, (texture) => {{
+                        createOrbits(texture);
+                    }}, undefined, (err) => {{
+                        createOrbits(null);
+                    }});
+                }} else {{
                     createOrbits(null);
-                }});
+                }}
 
                 animate();
             }}
 
             function createOrbits(texture) {{
-                const fragmentCount = 15;
+                const fragmentCount = 16;
                 for (let i = 0; i < fragmentCount; i++) {{
                     const matOpts = texture ? {{ map: texture, side: THREE.DoubleSide }} : {{ color: i % 2 === 0 ? 0x00f3ff : 0xff007f, wireframe: true }};
-                    const geo = new THREE.PlaneGeometry(0.5, 0.6);
+                    const geo = new THREE.PlaneGeometry(0.6, 0.75);
                     const mat = new THREE.MeshStandardMaterial(matOpts);
                     const mesh = new THREE.Mesh(geo, mat);
 
                     const angle = (i / fragmentCount) * Math.PI * 2;
-                    const radius = 3.2 + Math.random() * 0.8;
+                    const radius = 3.5 + Math.random() * 0.8;
                     
                     mesh.userData = {{
                         angle: angle,
                         radius: radius,
-                        speed: 0.01 + Math.random() * 0.015,
-                        bobSpeed: 0.02 + Math.random() * 0.03,
-                        initialY: 1.2 + Math.random() * 1.5
+                        speed: 0.012 + Math.random() * 0.015,
+                        bobSpeed: 0.025 + Math.random() * 0.035,
+                        initialY: 1.3 + Math.random() * 1.6
                     }};
 
                     photoFragments.push(mesh);
@@ -258,14 +277,16 @@ def render_3d_arena(is_lit):
             function animate() {{
                 requestAnimationFrame(animate);
 
+                // Dynamically revolve photo fragments in 3D orbit around the cake
                 photoFragments.forEach(frag => {{
                     frag.userData.angle += frag.userData.speed;
                     frag.position.x = Math.cos(frag.userData.angle) * frag.userData.radius;
                     frag.position.z = Math.sin(frag.userData.angle) * frag.userData.radius;
-                    frag.position.y = frag.userData.initialY + Math.sin(Date.now() * 0.003 * frag.userData.bobSpeed) * 0.4;
+                    frag.position.y = frag.userData.initialY + Math.sin(Date.now() * 0.003 * frag.userData.bobSpeed) * 0.5;
                     frag.rotation.y = -frag.userData.angle + Math.PI / 2;
                 }});
 
+                // Flame flicker effect when candles are lit
                 if (candlesLit) {{
                     flames.forEach(f => {{
                         f.scale.x = 0.85 + Math.sin(Date.now() * 0.012) * 0.25;
@@ -282,11 +303,11 @@ def render_3d_arena(is_lit):
     </html>
     """
     
-    html_code = html_template.format(LitFlag=lit_flag)
-    components.html(html_code, height=430)
+    html_code = html_template.format(LitFlag=lit_flag, ImgUri=image_source)
+    components.html(html_code, height=450)
 
 # Render 3D Cake & Revolving Photos Arena
-render_3d_arena(st.session_state.candles_lit)
+render_3d_arena(st.session_state.candles_lit, img_data_uri)
 
 # ---------------------------------------------------------
 # 3 Gamer Action Buttons
@@ -298,7 +319,7 @@ with col1:
     if st.button(flame_label):
         st.session_state.candles_lit = not st.session_state.candles_lit
         if st.session_state.candles_lit:
-            st.balloons()
+            st.balloons()  # Pops up balloons when candles are lit!
         st.rerun()
 
 with col2:
@@ -315,9 +336,9 @@ with col3:
 col_wish_img, col_wish_txt = st.columns([1, 2.2])
 
 with col_wish_img:
-    try:
+    if img_data_uri:
         st.image("shahid.jpg", use_container_width=True)
-    except Exception:
+    else:
         st.info("💡 Place 'shahid.jpg' in your folder to display his portrait here!")
 
 with col_wish_txt:
